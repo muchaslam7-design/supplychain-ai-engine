@@ -82,9 +82,11 @@ def predict_risk(data: ShipmentData):
 
         raw_prediction = clf.predict(features)[0]
         
-        if data.actual_days > data.scheduled_days:
+        # AI Model ke output (raw_prediction) ke mutabiq status set karna
+        # (Assuming 1 = Late, 0 = On Time, 2 = Advance)
+        if raw_prediction == 1:
             status = "LATE DELIVERY"
-        elif data.actual_days < data.scheduled_days:
+        elif raw_prediction == 2:
             status = "ADVANCE DISPATCH"
         else:
             status = "ON TIME PERFECT"
@@ -95,4 +97,4 @@ def predict_risk(data: ShipmentData):
         }
 
     except Exception as e:
-        return {"prediction": "LATE DELIVERY", "error": str(e)}
+        return {"prediction": "ERROR", "error": str(e)}
