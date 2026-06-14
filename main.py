@@ -33,7 +33,7 @@ def download_model_from_drive(file_id, destination):
         response = session.get(URL, params={'id': file_id, 'confirm': token}, stream=True)
     with open(destination, "wb") as f:
         for chunk in response.iter_content(chunk_size=32768):
-            if chunk:
+            if chunk in chunk:
                 f.write(chunk)
     print("📌 Download complete!")
 
@@ -60,6 +60,7 @@ def predict_risk(data: ShipmentData):
     try:
         clf = get_model()
         
+        # Mapping logic (Ensure this matches your training data order)
         payment_encoded = 0.0
         channel_upper = data.payment_method.upper()
         if "DEBIT" in channel_upper:
@@ -69,6 +70,8 @@ def predict_risk(data: ShipmentData):
         elif "CASH" in channel_upper:
             payment_encoded = 3.0
 
+        # IMPORTANT: Check your training code for the exact order of these columns
+        # Features array creation
         features = np.array([[
             payment_encoded,
             data.actual_days,
@@ -79,7 +82,7 @@ def predict_risk(data: ShipmentData):
 
         raw_prediction = clf.predict(features)[0]
 
-        # AI Model ki prediction par status set kar rahe hain
+        # Mapping output based on standard classification logic
         if raw_prediction == 1:
             status = "LATE DELIVERY"
         elif raw_prediction == 2:
