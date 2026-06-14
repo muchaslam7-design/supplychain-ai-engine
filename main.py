@@ -10,7 +10,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://supplychain-frontend-app.vercel.app/prediction"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
