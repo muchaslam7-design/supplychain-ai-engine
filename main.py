@@ -57,6 +57,7 @@ class ShipmentData(BaseModel):
     sales_per_customer: float
 
 @app.post("/predict")
+@app.post("/predict/")
 def predict_risk(data: ShipmentData):
     try:
         # Lazy loading: Model tabhi load hoga jab request aayegi
