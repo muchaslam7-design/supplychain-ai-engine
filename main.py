@@ -8,7 +8,6 @@ import requests
 
 app = FastAPI()
 
-# Enable CORS for React Frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,50 +16,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL_PATH = "best_delivery_model.pkl"
-
-# ⚠️ APNI GOOGLE DRIVE FILE ID YAHAN PASTE KAREIN
-
+# /tmp folder use karein kyunke cloud environments mein ye writable hota hai
+MODEL_PATH = "/tmp/best_delivery_model.pkl"
 GOOGLE_DRIVE_FILE_ID = "14sMS0ltOZur0uIPYwBlrh_eAqO1NbweL"
 
 def download_model_from_drive(file_id, destination):
-    """Downloads the large model file dynamically from Google Drive if missing."""
-    print("⏳ Downloading machine learning model from Google Drive...")
+    print("⏳ Downloading model...")
     URL = "https://docs.google.com/uc?export=download"
     session = requests.Session()
-    
     response = session.get(URL, params={'id': file_id}, stream=True)
     token = None
-    
     for key, value in response.cookies.items():
         if key.startswith('download_warning'):
             token = value
             break
-
     if token:
         response = session.get(URL, params={'id': file_id, 'confirm': token}, stream=True)
-        
     with open(destination, "wb") as f:
         for chunk in response.iter_content(chunk_size=32768):
             if chunk:
                 f.write(chunk)
-    print("📌 Model download complete!")
+    print("📌 Download complete!")
 
-# Trigger dynamic cloud auto-download layer if local check fails
-if not os.path.exists(MODEL_PATH):
-    try:
-        download_model_from_drive(GOOGLE_DRIVE_FILE_ID, MODEL_PATH)
-    except Exception as e:
-        print(f"❌ Auto-download failed: {e}")
+# Model ko global variable ke tor par rakhein taake baar baar load na ho
+model = None
 
-# Load the trained model safely
-try:
-    model = joblib.load(MODEL_PATH)
-    print("✓ Model loaded successfully!")
-except Exception as e:
-    print(f"❌ Model load error: {e}")
+def get_model():
+    global model
+    if model is None:
+        if not os.path.exists(MODEL_PATH):
+            download_model_from_drive(GOOGLE_DRIVE_FILE_ID, MODEL_PATH)
+        model = joblib.load(MODEL_PATH)
+    return model
 
-# This schema matches your frontend form request keys perfectly
 class ShipmentData(BaseModel):
     payment_method: str
     actual_days: float
@@ -71,7 +59,9 @@ class ShipmentData(BaseModel):
 @app.post("/predict")
 def predict_risk(data: ShipmentData):
     try:
-        # Encode payment channel simple numerical categories
+        # Lazy loading: Model tabhi load hoga jab request aayegi
+        clf = get_model()
+        
         payment_encoded = 0.0
         channel_upper = data.payment_method.upper()
         if "DEBIT" in channel_upper:
@@ -81,7 +71,6 @@ def predict_risk(data: ShipmentData):
         elif "CASH" in channel_upper:
             payment_encoded = 3.0
 
-        # Construct the exact NumPy array grid required by your scikit-learn model
         features = np.array([[
             payment_encoded,
             data.actual_days,
@@ -90,10 +79,8 @@ def predict_risk(data: ShipmentData):
             data.sales_per_customer
         ]], dtype=np.float64)
 
-        # Run prediction raw output inference
-        raw_prediction = model.predict(features)[0]
+        raw_prediction = clf.predict(features)[0]
         
-        # Hardcoded logical backup fallback matching your data visualization requirements
         if data.actual_days > data.scheduled_days:
             status = "LATE DELIVERY"
         elif data.actual_days < data.scheduled_days:
@@ -101,7 +88,6 @@ def predict_risk(data: ShipmentData):
         else:
             status = "ON TIME PERFECT"
 
-        # This uniform payload goes straight to your React component state handler
         return {
             "prediction": status,
             "raw_output": int(raw_prediction)
