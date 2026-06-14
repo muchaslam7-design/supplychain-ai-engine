@@ -16,7 +16,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# /tmp folder use karein kyunke cloud environments mein ye writable hota hai
 MODEL_PATH = "/tmp/best_delivery_model.pkl"
 GOOGLE_DRIVE_FILE_ID = "14sMS0ltOZur0uIPYwBlrh_eAqO1NbweL"
 
@@ -38,7 +37,6 @@ def download_model_from_drive(file_id, destination):
                 f.write(chunk)
     print("📌 Download complete!")
 
-# Model ko global variable ke tor par rakhein taake baar baar load na ho
 model = None
 
 def get_model():
@@ -60,7 +58,6 @@ class ShipmentData(BaseModel):
 @app.post("/predict/")
 def predict_risk(data: ShipmentData):
     try:
-        # Lazy loading: Model tabhi load hoga jab request aayegi
         clf = get_model()
         
         payment_encoded = 0.0
@@ -81,9 +78,8 @@ def predict_risk(data: ShipmentData):
         ]], dtype=np.float64)
 
         raw_prediction = clf.predict(features)[0]
-        
-        # AI Model ke output (raw_prediction) ke mutabiq status set karna
-        # (Assuming 1 = Late, 0 = On Time, 2 = Advance)
+
+        # AI Model ki prediction par status set kar rahe hain
         if raw_prediction == 1:
             status = "LATE DELIVERY"
         elif raw_prediction == 2:
