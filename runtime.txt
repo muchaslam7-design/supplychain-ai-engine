@@ -1,0 +1,9 @@
+### Step 2: `requirements.txt` ko aur simple karein
+Is baar `requirements.txt` mein sirf ye versions rakhein taake koi conflict na ho:
+```text
+fastapi
+uvicorn
+scikit-learn
+pydantic
+joblib
+numpy
